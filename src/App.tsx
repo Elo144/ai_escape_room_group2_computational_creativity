@@ -257,16 +257,17 @@ function Landing({
   );
 }
 
-function Config({
+  function Config({
   onBack,
   onBegin,
 }: {
   onBack: () => void;
-  onBegin: (difficulty: string, time: string, chaos: string) => void;
+  onBegin: (difficulty: string, time: string, chaos: string, mood: string) => void;
 }) {
   const [difficulty, setDifficulty] = useState("Medium");
   const [time, setTime] = useState("25");
   const [chaos, setChaos] = useState("Medium");
+  const [mood, setMood] = useState("Tense");
 
   return (
     <main className="config-page scene">
@@ -327,12 +328,20 @@ function Config({
             value={chaos}
             setValue={setChaos}
           />
+                    <ChoiceGroup
+            number="04"
+            title="Mood"
+            subtitle="Sets the tone of the Game Master and the room"
+            options={["Tense", "Eerie", "Hopeful", "Dark humour"]}
+            value={mood}
+            setValue={setMood}
+          />
           <div className="config-summary">
             <div>
               <span>Estimated survival odds</span>
               <strong>{difficulty === "Hard" || chaos === "High" ? "32%" : difficulty === "Easy" ? "78%" : "61%"}</strong>
             </div>
-            <button className="primary-button" onClick={() => onBegin(difficulty, time, chaos)}>
+            <button className="primary-button" onClick={() => onBegin(difficulty, time, chaos, mood)}>
               Enter the facility <Icon name="arrow" />
             </button>
           </div>
@@ -380,13 +389,34 @@ function ChoiceGroup({
   );
 }
 
-function Gameplay({
+const moodTone: Record<string, { intro: string; denied: string }> = {
+  Tense: {
+    intro: "Every second counts. I'm watching how you handle the pressure.",
+    denied: "That code is not recognized. Recheck the report's final instruction. Quickly.",
+  },
+  Eerie: {
+    intro: "The annex is quiet. Too quiet. I'm listening to how you move through it.",
+    denied: "The terminal hums and refuses. Something in the walls seems to disagree with you.",
+  },
+  Hopeful: {
+    intro: "There's a way out of here, and I believe you can find it. I'll be right beside you.",
+    denied: "Not quite, but you're closer than you think. Look at the report again.",
+  },
+  "Dark humour": {
+    intro: "Welcome to the apocalypse. Try not to die before the tutorial ends.",
+    denied: "Wrong. The zombies appreciate the extra thinking time, though.",
+  },
+};
+
+
+ function Gameplay({
   onExit,
   onPlayAgain,
   onChangeSettings,
   duration,
   difficulty,
   chaos,
+  mood,
 }: {
   onExit: () => void;
   onPlayAgain: () => void;
@@ -394,7 +424,9 @@ function Gameplay({
   duration: string;
   difficulty: string;
   chaos: string;
+  mood: string;
 }) {
+
   const initialSeconds = duration === "Unlimited" ? -1 : Number(duration) * 60;
   const [seconds, setSeconds] = useState(initialSeconds);
   const [answer, setAnswer] = useState("");
@@ -409,7 +441,7 @@ function Gameplay({
   const [objectiveComplete, setObjectiveComplete] = useState(false);
   const [memoryUpdated, setMemoryUpdated] = useState(false);
   const [memoryMessage, setMemoryMessage] = useState(
-    `I’m watching how you approach ${difficulty.toLowerCase()} puzzles under ${chaos.toLowerCase()} chaos.`,
+    `${moodTone[mood].intro} (${difficulty.toLowerCase()} puzzles, ${chaos.toLowerCase()} chaos)`,
   );
   const [result, setResult] = useState<Result>(null);
 
@@ -508,7 +540,7 @@ function Gameplay({
       : "You slipped into the Amazonas annex through a service corridor, preserving your flare and recovering the final incident report from the abandoned security desk.";
 
   return (
-    <main className="game-page">
+    <main className="game-page" data-mood={mood}>
       <div className="game-scene" />
       <div className="game-overlay" />
       <nav className="game-nav">
@@ -654,7 +686,7 @@ function Gameplay({
                   <Icon name="warning" />
                   <div>
                     <strong>ACCESS DENIED</strong>
-                    <span>That code is not recognized. Recheck the report’s final instruction.</span>
+                    <span>{moodTone[mood].denied}</span>
                   </div>
                 </>
               )}
@@ -951,11 +983,11 @@ function SettingRow({
 export default function App() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [modal, setModal] = useState<Modal>(null);
-  const [settings, setSettings] = useState({ difficulty: "Medium", time: "25", chaos: "Medium" });
+    const [settings, setSettings] = useState({ difficulty: "Medium", time: "25", chaos: "Medium", mood: "Tense" });
   const [gameRun, setGameRun] = useState(0);
 
-  const beginGame = (difficulty: string, time: string, chaos: string) => {
-    setSettings({ difficulty, time, chaos });
+  const beginGame = (difficulty: string, time: string, chaos: string, mood: string) => {
+    setSettings({ difficulty, time, chaos, mood });
     setScreen("game");
   };
 
@@ -972,6 +1004,7 @@ export default function App() {
           duration={settings.time}
           difficulty={settings.difficulty}
           chaos={settings.chaos}
+          mood={settings.mood}
         />
       )}
       {modal && <InfoModal type={modal} onClose={() => setModal(null)} />}
