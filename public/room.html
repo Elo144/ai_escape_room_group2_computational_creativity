@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OUTBREAK – 3D room</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@600;700&family=Black+Ops+One&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  /* Tokens from the OUTBREAK style guide (KAN-82) */
+  :root{
+    --void-900:#0b0d0c; --void-800:#141816; --void-700:#1d2320; --void-600:#2c3531; --void-500:#66736c;
+    --ash-100:#e9ede8; --ash-300:#a3ada7; --toxic-500:#7cff4f; --blood-500:#ff4a4d;
+    --hazard-400:#ffc727; --signal-300:#8fd3ff;
+    --font-display:"Black Ops One",Impact,sans-serif; --font-ui:"Barlow",system-ui,sans-serif;
+    --font-hud:"Barlow Condensed","Arial Narrow",sans-serif; --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--void-900);color:var(--ash-100);font-family:var(--font-ui)}
+  canvas{display:block;cursor:grab} canvas.dragging{cursor:grabbing} canvas.pointing{cursor:pointer}
+  .vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.65) 100%)}
+  .hidden{display:none!important}
+  .label{font-family:var(--font-hud);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ash-300)}
+  .btn{font-family:var(--font-hud);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;padding:12px 24px;border-radius:2px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--toxic-500);outline-offset:2px}
+  .primary{background:var(--toxic-500);color:var(--void-900)} .primary:hover{box-shadow:0 0 24px rgba(124,255,79,.35)}
+  .secondary{background:transparent;color:var(--ash-100);border-color:var(--void-500)}
+  .hint{background:var(--hazard-400);color:var(--void-900)}
+  .ask{background:transparent;color:var(--signal-300);border-color:var(--signal-300);padding:9px 16px;font-size:15px}
+  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+
+  .bar{position:fixed;left:16px;right:16px;display:flex;align-items:center;gap:16px;background:rgba(29,35,32,.92);border:1px solid var(--void-600);border-radius:6px;padding:12px 16px;box-shadow:0 12px 32px rgba(0,0,0,.6);z-index:5}
+  .top{top:16px} .bottom{bottom:16px}
+  #objective{flex:1;font-size:15px}
+  .pip{width:14px;height:14px;border-radius:999px;border:2px solid var(--void-500);display:inline-block}
+  .pip.on{background:var(--toxic-500);border-color:var(--toxic-500);box-shadow:0 0 24px rgba(124,255,79,.35)}
+  #timer{font-family:var(--font-mono);font-weight:700;font-size:32px;line-height:36px;font-variant-numeric:tabular-nums}
+  #timer.critical{color:var(--blood-500);text-shadow:0 0 16px rgba(255,74,77,.6)}
+  #gmText{flex:1;font-size:15px;color:var(--signal-300);min-height:22px}
+  select.objects{background:var(--void-900);color:var(--ash-100);border:1px solid var(--void-500);border-radius:2px;padding:9px;font:inherit;font-size:14px}
+  #tag{position:fixed;transform:translate(-50%,-140%);pointer-events:none;font-family:var(--font-hud);font-weight:600;font-size:13px;letter-spacing:.08em;background:var(--void-900);color:var(--hazard-400);border:1px solid var(--hazard-400);padding:2px 8px;border-radius:2px;z-index:6}
+
+  .overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,13,12,.72);z-index:10}
+  .card{width:min(580px,92vw);background:var(--void-800);border:1px solid var(--void-600);border-radius:6px;padding:24px;box-shadow:0 12px 32px rgba(0,0,0,.6)}
+  .card h1{font-family:var(--font-display);font-weight:400;font-size:56px;line-height:.95;margin:0 0 8px}
+  .card h2{font-size:26px;line-height:32px;margin:4px 0 8px}
+  .card p{font-size:16px;line-height:24px;margin:8px 0}
+  .muted{color:var(--ash-300);font-size:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .grid label{display:flex;flex-direction:column;gap:6px}
+  .grid select,.answer input,.chatbox input{background:var(--void-900);color:var(--ash-100);border:1px solid var(--void-500);border-radius:2px;padding:10px;font:inherit;font-size:15px}
+  .answer,.chatbox{display:flex;gap:8px;margin-top:16px} .answer input{flex:1;font-family:var(--font-mono)} .chatbox input{flex:1}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  #feedback{min-height:22px;margin-top:10px}
+  .ok{color:var(--toxic-500)} .bad{color:var(--blood-500)} .tip{color:var(--hazard-400)} .err{color:var(--blood-500)}
+  .tape{height:12px;margin:-24px -24px 20px;border-radius:6px 6px 0 0;background:repeating-linear-gradient(45deg,var(--hazard-400) 0 12px,var(--void-900) 12px 24px)}
+  .eval{margin-top:14px;padding-top:10px;border-top:1px solid var(--void-600);font-size:13px;color:var(--ash-300)}
+  .eval b{color:var(--toxic-500);font-weight:600}
+  #chaos{position:fixed;top:96px;left:50%;transform:translateX(-50%);width:min(640px,90vw);z-index:6;background:#2a1010;border:1px solid var(--blood-500);border-radius:6px;padding:12px 16px;box-shadow:0 0 24px rgba(255,74,77,.45)}
+  #chaos b{color:var(--blood-500);font-family:var(--font-hud);letter-spacing:.08em}
+  #chat{position:fixed;right:16px;bottom:96px;width:min(380px,90vw);max-height:60vh;display:flex;flex-direction:column;z-index:7;background:var(--void-700);border:1px solid var(--void-600);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.6)}
+  #chat .head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--void-600)}
+  #chat .head b{font-family:var(--font-hud);letter-spacing:.08em;color:var(--signal-300)}
+  #chat .head button{background:none;border:0;color:var(--ash-300);font-size:20px;cursor:pointer}
+  #msgs{flex:1;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+  .m{max-width:88%;padding:8px 14px;border-radius:6px;font-size:15px;line-height:22px;background:var(--void-800)}
+  .m.ai{border:1px solid var(--signal-300);align-self:flex-start} .m.me{border:1px solid var(--void-500);align-self:flex-end}
+  #chat .chatbox{margin:0;padding:12px;border-top:1px solid var(--void-600)}
+  .won h1{color:var(--toxic-500)} .lost h1{color:var(--blood-500)}
+</style>
+</head>
+<body>
+<div class="vignette"></div>
+<div id="tag" class="hidden"></div>
+
+<div class="bar top hidden" id="hudTop">
+  <span class="label" id="stageLabel">Objective</span><span id="objective"></span>
+  <span class="label">Cure</span><span class="pip" id="pip"></span>
+  <span id="timer">--:--</span>
+</div>
+<div class="bar bottom hidden" id="hudBottom">
+  <span class="label">Game master</span><span id="gmText" aria-live="polite">Drag to look around. Click glowing objects.</span>
+  <select class="objects" id="objectList" aria-label="Objects in this room"></select>
+  <button class="btn ask" id="askBtn">Ask the AI</button>
+</div>
+<div id="chaos" class="hidden" role="alert"><b>CHAOS EVENT</b> · <span id="chaosText"></span></div>
+
+<aside id="chat" class="hidden" aria-label="AI Game Master chat">
+  <div class="head"><b>AI GAME MASTER</b><button id="chatClose" aria-label="Close chat">×</button></div>
+  <div id="msgs"></div>
+  <div class="chatbox"><input id="chatInput" placeholder="Ask the Game Master…" autocomplete="off"><button class="btn primary" id="chatSend">Send</button></div>
+</aside>
+
+<!-- Start: used when the page is opened directly (the team's settings screen skips this) -->
+<div class="overlay" id="startOverlay">
+  <div class="card">
+    <div class="tape"></div>
+    <h1>OUTBREAK</h1>
+    <p class="muted" id="startSub">3D room · AI-generated</p>
+    <div class="grid" id="settingsGrid">
+      <label><span class="label">Stage</span><select id="stage"><option value="1">Brazil</option><option value="2" selected>New York</option><option value="3">Europe</option><option value="4">Antarctica</option></select></label>
+      <label><span class="label">Difficulty</span><select id="difficulty"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></label>
+      <label><span class="label">Chaos level</span><select id="chaosLevel"><option>Low</option><option selected>Medium</option><option>High</option></select></label>
+      <label><span class="label">Time limit</span><select id="timeLimit"><option value="20">20 min</option><option value="25" selected>25 min</option><option value="30">30 min</option><option value="40">40 min</option><option value="Unlimited">No limit</option></select></label>
+    </div>
+    <button class="btn primary" id="generateBtn">Generate room</button>
+    <p id="status" class="muted" aria-live="polite"></p>
+  </div>
+</div>
+
+<div class="overlay hidden" id="puzzleOverlay">
+  <div class="card">
+    <span class="label" id="pzMeta"></span>
+    <h2 id="pzTitle"></h2>
+    <p id="pzQuestion"></p>
+    <p class="muted" id="pzClues"></p>
+    <div class="answer"><input id="pzAnswer" autocomplete="off"><button class="btn primary" id="pzCheck">Check</button></div>
+    <div id="feedback" aria-live="polite"></div>
+    <div class="row"><button class="btn hint" id="pzHint">Hint 1 of 3 · −1:00</button><button class="btn secondary" id="pzClose">Back to room</button></div>
+    <div class="eval" id="pzEval"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="endOverlay">
+  <div class="card" id="endCard">
+    <h1 id="endTitle"></h1>
+    <p id="endText"></p>
+    <p class="muted" id="endStats"></p>
+    <div class="row"><button class="btn primary" onclick="location.reload()">Play again</button><a class="btn secondary" href="/">Back to archive</a></div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+
+/* ---------- Look of each stage (style guide: 3D art direction) ---------- */
+const LOOKS = {
+  1: { name: 'Brazil',     img: '/stage-brazil.jpg',     sun: 0xc8e09a, fog: 0x101a10, fogD: 0.04,  fire: 0,  particles: 'rain',   pColor: 0x9fb8c8 },
+  2: { name: 'New York',   img: '/img/nyc-sunset.jpg',   sun: 0xf5b25c, fog: 0x2a1a10, fogD: 0.035, fire: 6,  particles: 'embers', pColor: 0xff7a1a, x: -11.5, y: -1, w: 64 },
+  3: { name: 'Europe',     img: '/stage-europe.jpg',     sun: 0xdfe8f0, fog: 0x1a1f24, fogD: 0.03,  fire: 0,  particles: 'snow',   pColor: 0xe9ede8 },
+  4: { name: 'Antarctica', img: '/stage-antarctica.jpg', sun: 0x9fc4ff, fog: 0x1a2433, fogD: 0.045, fire: 0,  particles: 'snow',   pColor: 0xffffff }
+};
+
+/* ---------- Renderer, scene, camera ---------- */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d0c);
+scene.fog = new THREE.FogExp2(0x2a1a10, 0.035);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.25;
+const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.05, 200);
+const CAM_POS = new THREE.Vector3(0, 1.62, 1.6);
+camera.position.copy(CAM_POS);
+
+const mat = (color, rough = 0.8, metal = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal, ...extra });
+const M = {
+  wall: mat(0x4f4a44, 0.95), floor: mat(0x2a2826, 0.38, 0.1), ceiling: mat(0x3a3834, 0.95),
+  bench: mat(0x7d7770, 0.6), benchTop: mat(0x1c1f1e, 0.6, 0.2), steel: mat(0x8e9496, 0.35, 0.85),
+  cabinet: mat(0x5c6a64, 0.5, 0.6), darkMetal: mat(0x2b2f30, 0.45, 0.7), frame: mat(0x222424, 0.6, 0.5),
+  door: mat(0x4a3b2f, 0.7), glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.15, transmission: 0.9, transparent: true, opacity: 0.18 })
+};
+function box(w, h, d, material, x, y, z, parent = scene) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+}
+
+/* ---------- Layer 2: the room (10 x 3.2 x 8 m, big window on the back wall) ---------- */
+const W = 10, H = 3.2, D = 8, BACK = -6, FRONT = 2;
+box(W, 0.1, D, M.floor, 0, -0.05, -2); box(W, 0.1, D, M.ceiling, 0, H + 0.05, -2);
+box(0.2, H, D, M.wall, -W / 2, H / 2, -2); box(0.2, H, D, M.wall, W / 2, H / 2, -2); box(W, H, 0.2, M.wall, 0, H / 2, FRONT);
+box(2, H, 0.2, M.wall, -4, H / 2, BACK); box(2, H, 0.2, M.wall, 4, H / 2, BACK);
+box(6, 0.9, 0.2, M.wall, 0, 0.45, BACK); box(6, 0.4, 0.2, M.wall, 0, 3.0, BACK);
+for (const x of [-3, -1, 1, 3]) box(0.08, 1.9, 0.12, M.frame, x, 1.85, BACK);
+box(6, 0.08, 0.14, M.frame, 0, 0.9, BACK); box(6, 0.08, 0.14, M.frame, 0, 2.8, BACK);
+const glass = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.9), M.glass); glass.position.set(0, 1.85, BACK + 0.02); scene.add(glass);
+
+/* ---------- Layer 1: backdrop through the window (changes with the stage) ---------- */
+const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ fog: false, toneMapped: false, color: 0x222222 }));
+backdrop.position.z = -34; scene.add(backdrop);
+function setBackdrop(look) {
+  new THREE.TextureLoader().load(look.img, tex => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const w = look.w || 44, h = w * tex.image.height / tex.image.width;
+    backdrop.scale.set(w, h, 1); backdrop.position.x = look.x ?? 0; backdrop.position.y = look.y ?? 2.65;
+    backdrop.material.map = tex; backdrop.material.color.set(0xffffff); backdrop.material.needsUpdate = true;
+  });
+}
+
+/* ---------- Lights ---------- */
+scene.add(new THREE.HemisphereLight(0xffb070, 0x0b0d0c, 0.25));
+const sun = new THREE.DirectionalLight(0xf5b25c, 3.2);
+sun.position.set(-3, 4.2, -14); sun.target.position.set(1, 0, 0);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: 1, far: 30 });
+sun.shadow.bias = -0.0005; scene.add(sun, sun.target);
+const fireGlow = new THREE.PointLight(0xff7a1a, 6, 14, 2); fireGlow.position.set(1.5, 0.8, BACK + 0.8); scene.add(fireGlow);
+const alarm = new THREE.SpotLight(0xff2a2a, 0, 12, 0.6, 0.5, 1.5); alarm.position.set(4.6, 2.9, -1); alarm.target.position.set(0, 0, -3); scene.add(alarm, alarm.target);
+const alarmBulb = box(0.18, 0.18, 0.18, mat(0x550000, 0.4, 0, { emissive: 0xff2020, emissiveIntensity: 0.2 }), 4.85, 2.95, -1);
+const fluo = box(1.6, 0.06, 0.25, mat(0xffffff, 0.5, 0, { emissive: 0xdfeee8, emissiveIntensity: 0.15 }), -2, 3.12, -3.5);
+
+/* ---------- Props (simple stand-ins until the .glb models from KAN-84 are added) ---------- */
+function labBench(x, z, rotY = 0) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  box(2.4, 0.86, 0.9, M.bench, 0, 0.43, 0, g); box(2.5, 0.05, 1.0, M.benchTop, 0, 0.885, 0, g);
+  box(0.05, 0.9, 0.05, M.steel, -0.9, 1.35, 0.3, g); box(0.05, 0.9, 0.05, M.steel, 0.9, 1.35, 0.3, g); box(1.85, 0.04, 0.3, M.steel, 0, 1.55, 0.3, g);
+  for (let i = 0; i < 5; i++) { const v = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.16, 12), mat(0x7cff4f, 0.2, 0, { emissive: 0x3fae2a, emissiveIntensity: 1.2, transparent: true, opacity: 0.85 })); v.position.set(-0.6 + i * 0.12, 0.99, -0.2); g.add(v); }
+  return g;
+}
+const bench1 = labBench(-1.6, -3.2); labBench(1.9, -2.4, -0.15);
+const chair = box(0.45, 0.06, 0.45, M.darkMetal, 0.4, 0.25, -1.2); chair.rotation.set(0.2, 0.6, 1.3);
+for (let i = 0; i < 8; i++) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.3), mat(0xe8e2d4, 0.9)); p.rotation.set(-Math.PI / 2, 0, Math.random() * 6); p.position.set(-1 + Math.random() * 3, 0.005, -2 + Math.random() * 2.5); p.receiveShadow = true; scene.add(p); }
+const door = new THREE.Group(); door.position.set(4.9, 1.05, 0.6); door.rotation.y = Math.PI / 2; scene.add(door); box(1.1, 2.1, 0.08, M.door, 0, 0, 0, door);
+
+const interactive = [];
+function makeInteractive(group, fallbackName) {
+  group.userData = { name: fallbackName, description: '', isPuzzle: false };
+  group.traverse(o => { if (o.isMesh) { o.userData.owner = group; o.material = o.material.clone(); } });
+  interactive.push(group);
+}
+// The puzzle lock: the sealed cure cabinet (always holds the AI's puzzle)
+const cabinet = new THREE.Group(); cabinet.position.set(-4.6, 0, -1.6); scene.add(cabinet);
+box(0.6, 2.0, 1.2, M.cabinet, 0, 1.0, 0, cabinet); box(0.04, 1.8, 1.1, M.glass.clone(), 0.31, 1.05, 0, cabinet);
+box(0.06, 0.22, 0.16, mat(0x101010, 0.4, 0, { emissive: 0xff4a4d, emissiveIntensity: 0.8 }), 0.33, 1.2, 0.45, cabinet);
+makeInteractive(cabinet, 'Sealed cure cabinet'); cabinet.userData.isPuzzle = true;
+// Object slots: the AI's room objects are placed on these, in order
+const fuse = new THREE.Group(); fuse.position.set(4.85, 1.45, -3.6); scene.add(fuse);
+box(0.18, 0.7, 0.5, M.darkMetal, 0, 0, 0, fuse); box(0.02, 0.12, 0.42, mat(0xffc727, 0.6), -0.1, 0.25, 0, fuse);
+const computer = new THREE.Group(); computer.position.set(2.2, 0.91, -2.6); computer.rotation.y = 0.35; scene.add(computer);
+box(0.55, 0.36, 0.04, M.frame, 0, 0.3, 0, computer); box(0.5, 0.31, 0.01, mat(0x061206, 0.3, 0, { emissive: 0x7cff4f, emissiveIntensity: 0.35 }), 0, 0.3, 0.025, computer); box(0.1, 0.12, 0.1, M.frame, 0, 0.06, 0, computer);
+const boardCanvas = document.createElement('canvas'); boardCanvas.width = 1024; boardCanvas.height = 512;
+const boardTex = new THREE.CanvasTexture(boardCanvas); boardTex.colorSpace = THREE.SRGBColorSpace;
+const board = new THREE.Group(); board.position.set(-4.5, 1.6, -4.4); board.rotation.y = Math.PI / 2; scene.add(board);
+box(2.0, 1.0, 0.04, M.frame, 0, 0, 0, board);
+const boardFace = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.92), new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.6 })); boardFace.position.z = 0.025; board.add(boardFace);
+function drawBoard(title, text) {
+  const c = boardCanvas.getContext('2d');
+  c.fillStyle = '#f2efe6'; c.fillRect(0, 0, 1024, 512);
+  c.fillStyle = '#1b2a6b'; c.font = 'bold 44px Barlow, sans-serif'; c.fillText(title.toUpperCase().slice(0, 34), 40, 70);
+  c.font = '32px Barlow, sans-serif'; wrap(c, text, 40, 140, 940);
+  boardTex.needsUpdate = true;
+}
+function wrap(c, text, x, y, max) { let line = ''; for (const word of String(text).split(' ')) { if (c.measureText(line + word).width > max) { c.fillText(line, x, y); line = ''; y += 40; } line += word + ' '; } c.fillText(line, x, y); }
+drawBoard('Research notes', 'Waiting for the AI to build this room…');
+const SLOTS = [board, fuse, computer, bench1, door];
+SLOTS.forEach((g, i) => makeInteractive(g, ['Whiteboard', 'Fuse box', 'Research terminal', 'Lab bench', 'Exit door'][i]));
+
+/* ---------- Layer 3: atmosphere ---------- */
+const COUNT = 320, pGeo = new THREE.BufferGeometry(), pPos = new Float32Array(COUNT * 3), pVel = [];
+for (let i = 0; i < COUNT; i++) { pPos.set([(Math.random() - 0.5) * 14, Math.random() * 6, BACK - 1 - Math.random() * 10], i * 3); pVel.push(0.2 + Math.random() * 0.6); }
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({ color: 0xff7a1a, size: 0.06, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+scene.add(new THREE.Points(pGeo, pMat));
+let particleMode = 'embers';
+function smokeTexture() { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(70,58,50,0.55)'); r.addColorStop(1, 'rgba(70,58,50,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); }
+const smokeMat = new THREE.SpriteMaterial({ map: smokeTexture(), transparent: true, depthWrite: false, opacity: 0.5 });
+const smoke = [];
+for (let i = 0; i < 18; i++) { const s = new THREE.Sprite(smokeMat.clone()); s.position.set((Math.random() - 0.5) * 12, 1 + Math.random() * 4, BACK - 2 - Math.random() * 6); s.scale.setScalar(3 + Math.random() * 4); s.userData.v = 0.1 + Math.random() * 0.2; scene.add(s); smoke.push(s); }
+
+function applyLook(look) {
+  setBackdrop(look);
+  sun.color.setHex(look.sun); scene.fog.color.setHex(look.fog); scene.fog.density = look.fogD;
+  fireGlow.intensity = look.fire; fireGlow.userData.base = look.fire;
+  particleMode = look.particles; pMat.color.setHex(look.pColor);
+  pMat.size = look.particles === 'rain' ? 0.04 : look.particles === 'snow' ? 0.07 : 0.06;
+  pMat.blending = look.particles === 'embers' ? THREE.AdditiveBlending : THREE.NormalBlending;
+  smoke.forEach(s => s.visible = look.particles === 'embers');
+}
+
+/* ---------- Layer 4: film look ---------- */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.6, 0.82);
+composer.addPass(bloom); composer.addPass(new OutputPass());
+
+/* ---------- Look around, hover, click ---------- */
+let yaw = 0, pitch = -0.05, targetYaw = 0, targetPitch = -0.05, dragging = false, moved = 0, lastX = 0, lastY = 0, playing = false;
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => { dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; cv.classList.add('dragging'); });
+addEventListener('pointerup', e => { cv.classList.remove('dragging'); if (dragging && moved < 5 && playing) { const g = pick(e); if (g) inspect(g); } dragging = false; });
+addEventListener('pointermove', e => {
+  if (dragging) { const dx = e.clientX - lastX, dy = e.clientY - lastY; moved += Math.abs(dx) + Math.abs(dy); lastX = e.clientX; lastY = e.clientY; targetYaw = THREE.MathUtils.clamp(targetYaw - dx * 0.004, -1.15, 1.15); targetPitch = THREE.MathUtils.clamp(targetPitch - dy * 0.003, -0.45, 0.35); }
+  else if (playing) hoverAt(e);
+});
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let hovered = null;
+function pick(e) { mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(mouse, camera); const hit = ray.intersectObjects(interactive, true)[0]; return hit && hit.distance < 9 ? hit.object.userData.owner : null; }
+function setGlow(group, on) { group.traverse(o => { if (o.isMesh && o.material.emissive) { o.material.userData.base ??= { c: o.material.emissive.getHex(), i: o.material.emissiveIntensity }; const b = o.material.userData.base; o.material.emissive.setHex(on ? 0xffc727 : b.c); o.material.emissiveIntensity = on ? 0.35 : b.i; } }); }
+function hoverAt(e) {
+  const g = pick(e); if (g !== hovered) { if (hovered) setGlow(hovered, false); hovered = g; if (g) setGlow(g, true); }
+  const tag = $('tag');
+  if (g) { tag.textContent = g.userData.name.toUpperCase(); tag.style.left = e.clientX + 'px'; tag.style.top = e.clientY + 'px'; tag.classList.remove('hidden'); cv.classList.add('pointing'); }
+  else { tag.classList.add('hidden'); cv.classList.remove('pointing'); }
+}
+$('objectList').addEventListener('change', e => { const g = interactive[+e.target.value]; if (g) inspect(g); e.target.value = ''; });
+
+/* ---------- Game: talks to the AI server (backend/server.js) through /api ---------- */
+let game = null, secondsLeft = Infinity, timerId = null, hintLevel = 0, wrong = 0, startTime = 0, chaosShown = false, totalSeconds = Infinity;
+const gm = t => { $('gmText').textContent = t; };
+async function api(path, body) {
+  const res = await fetch('/api/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({ error: 'The AI server is not running (start it with: cd backend && npm start).' }));
+  if (!res.ok) throw new Error(data.error || 'Server error ' + res.status);
+  return data;
+}
+
+async function generate(settings) {
+  $('generateBtn').disabled = true; $('status').className = 'muted';
+  $('status').textContent = 'The AI is designing the room, writing a puzzle and testing it with the evaluator… (up to a minute)';
+  applyLook(LOOKS[settings.stage]);
+  try { startGame(await api('room', settings), settings); }
+  catch (err) { $('status').className = 'err'; $('status').textContent = 'Could not generate the room: ' + err.message; $('generateBtn').disabled = false; $('settingsGrid').classList.remove('hidden'); }
+}
+$('generateBtn').addEventListener('click', () => generate({ stage: +$('stage').value, difficulty: $('difficulty').value, chaos: $('chaosLevel').value, timeLimit: $('timeLimit').value }));
+
+function startGame(data, settings) {
+  game = data; playing = true; startTime = Date.now();
+  const r = data.room;
+  // put the AI's objects onto the object slots
+  (r.objects || []).slice(0, SLOTS.length).forEach((o, i) => { SLOTS[i].userData.name = o.name; SLOTS[i].userData.description = o.description; });
+  const first = r.objects?.[0]; if (first) drawBoard(first.name, first.description);
+  $('objectList').innerHTML = '<option value="">Objects in this room…</option>' + interactive.map((g, i) => `<option value="${i}">${g.userData.name}</option>`).join('');
+  $('stageLabel').textContent = `${data.stage.place} · Objective`;
+  $('objective').textContent = r.objective;
+  gm(r.story_intro);
+  if (settings.chaos === 'High') { alarm.intensity = 18; scene.fog.density *= 1.4; bloom.strength = 0.75; }
+  $('startOverlay').classList.add('hidden'); $('hudTop').classList.remove('hidden'); $('hudBottom').classList.remove('hidden');
+  totalSeconds = settings.timeLimit === 'Unlimited' ? Infinity : Number(settings.timeLimit) * 60; secondsLeft = totalSeconds;
+  clearInterval(timerId); timerId = setInterval(tick, 1000); tick();
+}
+function tick() {
+  if (secondsLeft === Infinity) { $('timer').textContent = '∞'; return; }
+  secondsLeft--; if (secondsLeft <= 0) { secondsLeft = 0; endGame(false); }
+  $('timer').textContent = `${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`;
+  $('timer').classList.toggle('critical', secondsLeft < 60);
+  if (!chaosShown && secondsLeft <= totalSeconds / 2) chaosEvent();
+}
+
+function inspect(g) {
+  const u = g.userData;
+  if (!u.isPuzzle) { gm(`${u.name}: ${u.description || 'Nothing useful here.'}`); if (g === board) drawBoard(u.name, u.description || ''); return; }
+  const p = game.puzzle;
+  $('pzMeta').textContent = `${p.type} · ${p.difficulty || ''}`;
+  $('pzTitle').textContent = u.name; $('pzQuestion').textContent = p.puzzle_text;
+  $('pzClues').textContent = p.clue_locations?.length ? 'Look at: ' + p.clue_locations.join(' · ') : '';
+  $('pzAnswer').placeholder = p.answer_format || 'Type your answer'; $('pzAnswer').value = ''; $('feedback').textContent = '';
+  const e = game.evaluation;
+  $('pzEval').innerHTML = e ? `AI evaluator: <b>${e.pass ? 'PASSED' : 'BEST ATTEMPT'}</b> · logical ${e.scores?.logical} · solvable ${e.scores?.solvable} · difficulty ${e.scores?.difficulty} · on theme ${e.scores?.on_theme}` : '';
+  $('puzzleOverlay').classList.remove('hidden'); $('pzAnswer').focus();
+}
+async function check() {
+  const answer = $('pzAnswer').value.trim();
+  if (!answer) { $('feedback').className = 'err'; $('feedback').textContent = 'Type an answer first.'; return; }
+  $('pzCheck').disabled = true;
+  try {
+    const r = await api('check', { id: game.id, answer });
+    if (r.correct) { $('pip').classList.add('on'); $('feedback').className = 'ok'; $('feedback').textContent = 'Correct! The cabinet unlocks.'; setTimeout(() => endGame(true), 900); }
+    else { wrong = r.wrongAttempts; $('feedback').className = 'bad'; $('feedback').textContent = "That's not it. Try again."; if (wrong >= 2 && !chaosShown) chaosEvent(); }
+  } catch (err) { $('feedback').className = 'err'; $('feedback').textContent = err.message; }
+  $('pzCheck').disabled = false;
+}
+$('pzCheck').addEventListener('click', check);
+$('pzAnswer').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+$('pzHint').addEventListener('click', async () => {
+  if (hintLevel >= 3) return;
+  hintLevel++; if (secondsLeft !== Infinity) secondsLeft = Math.max(1, secondsLeft - 60);
+  $('pzHint').disabled = true; $('feedback').className = 'tip'; $('feedback').textContent = 'The Field Guide is thinking…';
+  try { const h = await api('hint', { id: game.id, level: hintLevel }); $('feedback').textContent = `Hint ${hintLevel}: ${h.hint}`; }
+  catch (err) { $('feedback').className = 'err'; $('feedback').textContent = err.message; }
+  $('pzHint').textContent = hintLevel >= 3 ? 'No hints left' : `Hint ${hintLevel + 1} of 3 · −1:00`;
+  $('pzHint').disabled = hintLevel >= 3;
+});
+$('pzClose').addEventListener('click', () => $('puzzleOverlay').classList.add('hidden'));
+
+/* AI Game Master chat */
+$('askBtn').addEventListener('click', () => { $('chat').classList.toggle('hidden'); $('chatInput').focus(); });
+$('chatClose').addEventListener('click', () => $('chat').classList.add('hidden'));
+function addMsg(text, who) { const d = document.createElement('div'); d.className = 'm ' + who; d.textContent = text; $('msgs').append(d); $('msgs').scrollTop = 1e6; }
+async function sendChat() {
+  const msg = $('chatInput').value.trim(); if (!msg || !game) return;
+  $('chatInput').value = ''; addMsg(msg, 'me'); $('chatSend').disabled = true;
+  try { const r = await api('chat', { id: game.id, message: msg }); addMsg(r.reply, 'ai'); }
+  catch (err) { addMsg(err.message, 'ai'); }
+  $('chatSend').disabled = false;
+}
+$('chatSend').addEventListener('click', sendChat);
+$('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+function chaosEvent() {
+  const c = game?.room?.chaos_event; if (!c || chaosShown) return; chaosShown = true;
+  $('chaosText').textContent = c.description || c; $('chaos').classList.remove('hidden');
+  alarm.intensity = 22; fluo.material.emissiveIntensity = 0; scene.fog.density *= 1.5;
+  setTimeout(() => $('chaos').classList.add('hidden'), 8000);
+}
+function endGame(won) {
+  if (!playing) return; playing = false; clearInterval(timerId);
+  $('puzzleOverlay').classList.add('hidden');
+  $('endCard').className = 'card ' + (won ? 'won' : 'lost');
+  $('endTitle').textContent = won ? 'YOU ESCAPED' : 'MISSION FAILED';
+  $('endText').textContent = won ? game.room.endings?.escaped : game.room.endings?.failed;
+  const s = Math.round((Date.now() - startTime) / 1000);
+  $('endStats').textContent = `Time ${Math.floor(s / 60)}m ${s % 60}s · Wrong answers ${wrong} · Hints used ${hintLevel}`;
+  $('endOverlay').classList.remove('hidden');
+}
+
+/* ---------- Start: from the team's settings screen (?difficulty=…) or from this page ---------- */
+const startStage = LOOKS[+params.get('stage')] ? +params.get('stage') : 2;
+$('stage').value = String(startStage); applyLook(LOOKS[startStage]);
+if (params.has('difficulty')) {
+  $('settingsGrid').classList.add('hidden'); $('startSub').textContent = `${LOOKS[startStage].name} · entering the facility`;
+  generate({ stage: startStage, difficulty: params.get('difficulty'), chaos: params.get('chaos') || 'Medium', timeLimit: params.get('time') || '25' });
+}
+
+/* ---------- Render loop ---------- */
+const clock = new THREE.Clock();
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function animate() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  yaw += (targetYaw - yaw) * 0.12; pitch += (targetPitch - pitch) * 0.12;
+  const sway = reduceMotion ? 0 : Math.sin(t * 0.6) * 0.008;
+  camera.position.set(CAM_POS.x + sway, CAM_POS.y + sway * 0.5, CAM_POS.z);
+  camera.rotation.set(pitch, yaw, 0, 'YXZ');
+  const p = pGeo.attributes.position, dir = particleMode === 'embers' ? 1 : -1, speed = particleMode === 'rain' ? 8 : 1;
+  for (let i = 0; i < COUNT; i++) {
+    p.array[i * 3 + 1] += dir * pVel[i] * speed * dt; p.array[i * 3] += Math.sin(t + i) * 0.003;
+    if (p.array[i * 3 + 1] > 6) p.array[i * 3 + 1] = 0; if (p.array[i * 3 + 1] < 0) p.array[i * 3 + 1] = 6;
+  }
+  p.needsUpdate = true;
+  smoke.forEach(s => { s.position.x += s.userData.v * dt; if (s.position.x > 8) s.position.x = -8; });
+  if (!reduceMotion) {
+    if (fireGlow.userData.base) fireGlow.intensity = fireGlow.userData.base + Math.sin(t * 7) * 0.8 + Math.sin(t * 13) * 0.5;
+    if (alarm.intensity > 0) { alarm.target.position.set(Math.sin(t * 3) * 4, 0, -3 + Math.cos(t * 3) * 2); alarmBulb.material.emissiveIntensity = 1 + Math.sin(t * 6); }
+  }
+  composer.render(); requestAnimationFrame(animate);
+}
+animate();
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>

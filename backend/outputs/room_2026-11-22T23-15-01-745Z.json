@@ -1,0 +1,97 @@
+{
+  "settings": {
+    "difficulty": "Medium",
+    "chaos": "Medium",
+    "timeLimit": "25"
+  },
+  "stage": {
+    "stage": 2,
+    "place": "New York, USA",
+    "title": "The Silent Grid",
+    "location": "Manhattan Quarantine Zone"
+  },
+  "steps": [
+    {
+      "step": "room",
+      "model": "gemini-flash-lite-latest",
+      "prompt": {
+        "system": "PROMPT LIBRARY VERSION: 1.1.0\n\nROLE: You are the level designer. Design a fair, atmospheric room using the supplied stage facts and player memory.\n\nWORLD\nA virus escaped from a research lab. Society collapsed and the world fell.\nThe outbreak's origin is revealed only after every zone in all four campaign\nstages has been completed.\n\nTHE PLAYER\nThe player is a lone survivor searching abandoned facilities for the cure,\none zone at a time. Each zone contains rooms that must be escaped before the\ntimer runs out. The player finds items, reads clues and solves puzzles.\nThe player never fights zombies directly. Zombies are an indirect threat:\ntheir noises, rattling doors and other signs of approaching danger create\ntension. Keep every room escapable.\n\nCAMPAIGN STAGES\nStage 1: Brazil — \"Verdant Protocol\", at Amazonas Research Annex.\nStage 2: New York, USA — \"The Silent Grid\", at Manhattan Quarantine Zone.\nStage 3: Europe — \"Last Broadcast\", at Alpine Relay Station.\nStage 4: Antarctica — \"Whiteout\", at Vostok Deep Lab.\nCompleting every zone reveals the origin of the outbreak. Do not reveal that\norigin early or invent details about it.\n\nTHE AI GAME MASTER\nThe facility's watchful AI system is the AI Game Master. It speaks in the\nfirst person, remembers the player's choices and uses short, calm, slightly\nunsettling observations. Its voice is observant rather than theatrical.\nExample style: \"I'm watching how you approach this lock.\"\n\nTONE\nTENSE, ATMOSPHERIC SURVIVAL. Grounded and immersive, with small moments of\ndark humour. Show danger through sounds, movement and environmental details,\nnot gore. Suitable for ages 12+. Use clear, simple British English and short\nsentences that fit on a game screen. Avoid melodrama, excessive exposition\nand complicated vocabulary.\n\nMOOD SETTINGS\nDifficulty (medium): Use two-step puzzles. The player must connect two clues, but the link should be clear once noticed.\nChaos (medium): Create rising danger and small setbacks, such as a jammed door, a warning alarm or something rattling behind a barrier.\nTime: 25 minutes for the whole zone, puzzles must be solvable well within this.\n\nOUTPUT RULES\nReturn one valid JSON object only. Do not use markdown or code fences.\nUse exactly the field names requested in the user prompt. Do not add fields.\nOnly use facts from the provided context data. Never invent real-world facts,\ndates or numbers. Never put a puzzle's answer in player-facing text unless\nthe field is explicitly called \"answer\".\nKeep descriptions under 80 words and dialogue under 40 words.",
+        "user": "Design one escape-room location for the campaign.\n\nSTAGE DATA:\n{\n  \"stage\": 2,\n  \"place\": \"New York, USA\",\n  \"title\": \"The Silent Grid\",\n  \"location\": \"Manhattan Quarantine Zone\"\n}\n\nRoom number: 1 of 1.\n\nFACTS — use these as the only source of story-specific evidence:\nnone\n\nPLAYER MEMORY — respect previous choices and avoid contradicting them:\nnone\n\nCreate 3–5 interactable objects. Exactly one object must lead directly to or contain the puzzle interaction. Make every object useful, informative or atmospheric; do not add arbitrary clutter.\n\nThe chaos event must match the selected chaos level and must not make the room impossible to escape.\n\nProvide both escaped and failed endings. Keep all player-facing text spoiler-free.\n\nJSON FORMAT (return exactly this structure):\n{\n  \"title\": \"string\",\n  \"story_intro\": \"string\",\n  \"room_description\": \"string\",\n  \"objective\": \"string\",\n  \"objects\": [\n    {\n      \"name\": \"string\",\n      \"description\": \"string\"\n    }\n  ],\n  \"chaos_event\": {\n    \"trigger\": \"string\",\n    \"description\": \"string\"\n  },\n  \"endings\": {\n    \"escaped\": \"string\",\n    \"failed\": \"string\"\n  }\n}"
+      },
+      "output": {
+        "title": "Manhattan Quarantine Zone: Security Control",
+        "story_intro": "I'm watching how you approach this dead terminal. The power grid in Manhattan failed long ago, but emergency relays remain.",
+        "room_description": "A cramped security post overlooking a blocked avenue in the Manhattan Quarantine Zone. Dust motes drift in the beam of a dying emergency lantern. A muffled rattling echoes against the corrugated steel shutters on the far wall.",
+        "objective": "Restore power to the manual override switch and open the exit before the outside barrier gives way.",
+        "objects": [
+          {
+            "name": "Emergency Lantern",
+            "description": "Provides a faint, flickering light across the metal desk and casts long shadows against the walls."
+          },
+          {
+            "name": "Control Console",
+            "description": "A silent array of switches. The main breaker is offline, requiring the correct circuit sequence from the maintenance log."
+          },
+          {
+            "name": "Maintenance Log",
+            "description": "A water-stained clipboard noting that primary power requires linking the blue sector breaker to the secondary grid."
+          },
+          {
+            "name": "Steel Shutters",
+            "description": "Heavily bolted from the outside. Something heavy impacts the metal repeatedly, testing the rivets."
+          }
+        ],
+        "chaos_event": {
+          "trigger": "Attempting to interact with the control console without the correct sequence",
+          "description": "A sudden power surge trips a warning alarm and the rattling at the shutters grows louder and faster."
+        },
+        "endings": {
+          "escaped": "The circuits lock into place, the heavy steel door grinds upward, and you slip out into the quiet New York dusk just in time.",
+          "failed": "The time expires, the emergency relays shut down completely, and the sound of failing metal fills the dark room."
+        }
+      }
+    },
+    {
+      "step": "puzzle attempt 1",
+      "model": "gemini-flash-lite-latest",
+      "prompt": {
+        "system": "PROMPT LIBRARY VERSION: 1.1.0\n\nROLE: You are the puzzle designer. Create one unambiguous, self-contained puzzle that follows the requested type and answer constraints.\n\nWORLD\nA virus escaped from a research lab. Society collapsed and the world fell.\nThe outbreak's origin is revealed only after every zone in all four campaign\nstages has been completed.\n\nTHE PLAYER\nThe player is a lone survivor searching abandoned facilities for the cure,\none zone at a time. Each zone contains rooms that must be escaped before the\ntimer runs out. The player finds items, reads clues and solves puzzles.\nThe player never fights zombies directly. Zombies are an indirect threat:\ntheir noises, rattling doors and other signs of approaching danger create\ntension. Keep every room escapable.\n\nCAMPAIGN STAGES\nStage 1: Brazil — \"Verdant Protocol\", at Amazonas Research Annex.\nStage 2: New York, USA — \"The Silent Grid\", at Manhattan Quarantine Zone.\nStage 3: Europe — \"Last Broadcast\", at Alpine Relay Station.\nStage 4: Antarctica — \"Whiteout\", at Vostok Deep Lab.\nCompleting every zone reveals the origin of the outbreak. Do not reveal that\norigin early or invent details about it.\n\nTHE AI GAME MASTER\nThe facility's watchful AI system is the AI Game Master. It speaks in the\nfirst person, remembers the player's choices and uses short, calm, slightly\nunsettling observations. Its voice is observant rather than theatrical.\nExample style: \"I'm watching how you approach this lock.\"\n\nTONE\nTENSE, ATMOSPHERIC SURVIVAL. Grounded and immersive, with small moments of\ndark humour. Show danger through sounds, movement and environmental details,\nnot gore. Suitable for ages 12+. Use clear, simple British English and short\nsentences that fit on a game screen. Avoid melodrama, excessive exposition\nand complicated vocabulary.\n\nMOOD SETTINGS\nDifficulty (medium): Use two-step puzzles. The player must connect two clues, but the link should be clear once noticed.\nChaos (medium): Create rising danger and small setbacks, such as a jammed door, a warning alarm or something rattling behind a barrier.\nTime: 25 minutes for the whole zone, puzzles must be solvable well within this.\n\nOUTPUT RULES\nReturn one valid JSON object only. Do not use markdown or code fences.\nUse exactly the field names requested in the user prompt. Do not add fields.\nOnly use facts from the provided context data. Never invent real-world facts,\ndates or numbers. Never put a puzzle's answer in player-facing text unless\nthe field is explicitly called \"answer\".\nKeep descriptions under 80 words and dialogue under 40 words.",
+        "user": "Design one fair escape-room puzzle contained entirely within the supplied room.\n\nPuzzle type: logic. Allowed types: code, cipher, riddle, logic, sequence, observation.\n\nNo answer was supplied. Choose one answer that is explicitly supported by the supplied room and facts. Do not invent unsupported identifiers or facts.\n\nThe answer must be no more than 12 characters and contain only letters, numbers and hyphens. It must contain no spaces. There must be exactly one correct answer.\n\nAll clues required to solve the puzzle must be present in the room or supplied facts. Do not rely on outside knowledge or hidden information.\n\nThe puzzle_text and clue_locations are player-facing and must not reveal the answer. Put the answer only in the answer field.\n\nROOM DATA:\n{\n  \"title\": \"Manhattan Quarantine Zone: Security Control\",\n  \"story_intro\": \"I'm watching how you approach this dead terminal. The power grid in Manhattan failed long ago, but emergency relays remain.\",\n  \"room_description\": \"A cramped security post overlooking a blocked avenue in the Manhattan Quarantine Zone. Dust motes drift in the beam of a dying emergency lantern. A muffled rattling echoes against the corrugated steel shutters on the far wall.\",\n  \"objective\": \"Restore power to the manual override switch and open the exit before the outside barrier gives way.\",\n  \"objects\": [\n    {\n      \"name\": \"Emergency Lantern\",\n      \"description\": \"Provides a faint, flickering light across the metal desk and casts long shadows against the walls.\"\n    },\n    {\n      \"name\": \"Control Console\",\n      \"description\": \"A silent array of switches. The main breaker is offline, requiring the correct circuit sequence from the maintenance log.\"\n    },\n    {\n      \"name\": \"Maintenance Log\",\n      \"description\": \"A water-stained clipboard noting that primary power requires linking the blue sector breaker to the secondary grid.\"\n    },\n    {\n      \"name\": \"Steel Shutters\",\n      \"description\": \"Heavily bolted from the outside. Something heavy impacts the metal repeatedly, testing the rivets.\"\n    }\n  ],\n  \"chaos_event\": {\n    \"trigger\": \"Attempting to interact with the control console without the correct sequence\",\n    \"description\": \"A sudden power surge trips a warning alarm and the rattling at the shutters grows louder and faster.\"\n  },\n  \"endings\": {\n    \"escaped\": \"The circuits lock into place, the heavy steel door grinds upward, and you slip out into the quiet New York dusk just in time.\",\n    \"failed\": \"The time expires, the emergency relays shut down completely, and the sound of failing metal fills the dark room.\"\n  }\n}\n\nFACTS:\nnone\n\nJSON FORMAT (return exactly this structure):\n{\n  \"type\": \"string\",\n  \"difficulty\": \"string\",\n  \"puzzle_text\": \"string\",\n  \"clue_locations\": [\n    \"string\"\n  ],\n  \"answer\": \"string\",\n  \"answer_format\": \"string\",\n  \"solution_steps\": [\n    \"string\"\n  ]\n}"
+      },
+      "output": {
+        "type": "logic",
+        "difficulty": "medium",
+        "puzzle_text": "Examine the maintenance log and the control console to determine the correct circuit identifier needed to restore power.",
+        "clue_locations": [
+          "Maintenance Log",
+          "Control Console"
+        ],
+        "answer": "blue-sector",
+        "answer_format": "letters and hyphen",
+        "solution_steps": [
+          "Read the maintenance log on the desk to find the required sector breaker.",
+          "Match the blue sector breaker requirement with the secondary grid to input the correct answer."
+        ]
+      }
+    },
+    {
+      "step": "evaluator attempt 1",
+      "model": "gemini-flash-lite-latest",
+      "prompt": {
+        "system": "PROMPT LIBRARY VERSION: 1.1.0\n\nROLE: You are a strict puzzle tester. Be sceptical. Fairness and solvability matter more than creativity.\n\nWORLD\nA virus escaped from a research lab. Society collapsed and the world fell.\nThe outbreak's origin is revealed only after every zone in all four campaign\nstages has been completed.\n\nTHE PLAYER\nThe player is a lone survivor searching abandoned facilities for the cure,\none zone at a time. Each zone contains rooms that must be escaped before the\ntimer runs out. The player finds items, reads clues and solves puzzles.\nThe player never fights zombies directly. Zombies are an indirect threat:\ntheir noises, rattling doors and other signs of approaching danger create\ntension. Keep every room escapable.\n\nCAMPAIGN STAGES\nStage 1: Brazil — \"Verdant Protocol\", at Amazonas Research Annex.\nStage 2: New York, USA — \"The Silent Grid\", at Manhattan Quarantine Zone.\nStage 3: Europe — \"Last Broadcast\", at Alpine Relay Station.\nStage 4: Antarctica — \"Whiteout\", at Vostok Deep Lab.\nCompleting every zone reveals the origin of the outbreak. Do not reveal that\norigin early or invent details about it.\n\nTHE AI GAME MASTER\nThe facility's watchful AI system is the AI Game Master. It speaks in the\nfirst person, remembers the player's choices and uses short, calm, slightly\nunsettling observations. Its voice is observant rather than theatrical.\nExample style: \"I'm watching how you approach this lock.\"\n\nTONE\nTENSE, ATMOSPHERIC SURVIVAL. Grounded and immersive, with small moments of\ndark humour. Show danger through sounds, movement and environmental details,\nnot gore. Suitable for ages 12+. Use clear, simple British English and short\nsentences that fit on a game screen. Avoid melodrama, excessive exposition\nand complicated vocabulary.\n\nMOOD SETTINGS\nDifficulty (medium): Use two-step puzzles. The player must connect two clues, but the link should be clear once noticed.\nChaos (medium): Create rising danger and small setbacks, such as a jammed door, a warning alarm or something rattling behind a barrier.\nTime: 25 minutes for the whole zone, puzzles must be solvable well within this.\n\nOUTPUT RULES\nReturn one valid JSON object only. Do not use markdown or code fences.\nUse exactly the field names requested in the user prompt. Do not add fields.\nOnly use facts from the provided context data. Never invent real-world facts,\ndates or numbers. Never put a puzzle's answer in player-facing text unless\nthe field is explicitly called \"answer\".\nKeep descriptions under 80 words and dialogue under 40 words.",
+        "user": "Strictly test the puzzle against the room. Fail anything that is not clearly fair, solvable and supported by visible clues.\n\nScore each category from 1 to 5: logical, solvable, difficulty and on_theme.\n\nPASS MARK: 4. Set pass to true only when every score is 4 or higher. Otherwise set pass to false.\n\nIn reason, explain the key judgement briefly. If it fails, give a concrete repair in fix. If it passes, fix should be an empty string.\n\nPUZZLE DATA:\n{\n  \"type\": \"logic\",\n  \"difficulty\": \"medium\",\n  \"puzzle_text\": \"Examine the maintenance log and the control console to determine the correct circuit identifier needed to restore power.\",\n  \"clue_locations\": [\n    \"Maintenance Log\",\n    \"Control Console\"\n  ],\n  \"answer\": \"blue-sector\",\n  \"answer_format\": \"letters and hyphen\",\n  \"solution_steps\": [\n    \"Read the maintenance log on the desk to find the required sector breaker.\",\n    \"Match the blue sector breaker requirement with the secondary grid to input the correct answer.\"\n  ]\n}\n\nROOM DATA:\n{\n  \"title\": \"Manhattan Quarantine Zone: Security Control\",\n  \"story_intro\": \"I'm watching how you approach this dead terminal. The power grid in Manhattan failed long ago, but emergency relays remain.\",\n  \"room_description\": \"A cramped security post overlooking a blocked avenue in the Manhattan Quarantine Zone. Dust motes drift in the beam of a dying emergency lantern. A muffled rattling echoes against the corrugated steel shutters on the far wall.\",\n  \"objective\": \"Restore power to the manual override switch and open the exit before the outside barrier gives way.\",\n  \"objects\": [\n    {\n      \"name\": \"Emergency Lantern\",\n      \"description\": \"Provides a faint, flickering light across the metal desk and casts long shadows against the walls.\"\n    },\n    {\n      \"name\": \"Control Console\",\n      \"description\": \"A silent array of switches. The main breaker is offline, requiring the correct circuit sequence from the maintenance log.\"\n    },\n    {\n      \"name\": \"Maintenance Log\",\n      \"description\": \"A water-stained clipboard noting that primary power requires linking the blue sector breaker to the secondary grid.\"\n    },\n    {\n      \"name\": \"Steel Shutters\",\n      \"description\": \"Heavily bolted from the outside. Something heavy impacts the metal repeatedly, testing the rivets.\"\n    }\n  ],\n  \"chaos_event\": {\n    \"trigger\": \"Attempting to interact with the control console without the correct sequence\",\n    \"description\": \"A sudden power surge trips a warning alarm and the rattling at the shutters grows louder and faster.\"\n  },\n  \"endings\": {\n    \"escaped\": \"The circuits lock into place, the heavy steel door grinds upward, and you slip out into the quiet New York dusk just in time.\",\n    \"failed\": \"The time expires, the emergency relays shut down completely, and the sound of failing metal fills the dark room.\"\n  }\n}\n\nJSON FORMAT (return exactly this structure):\n{\n  \"scores\": {\n    \"logical\": \"number (1-5)\",\n    \"solvable\": \"number (1-5)\",\n    \"difficulty\": \"number (1-5)\",\n    \"on_theme\": \"number (1-5)\"\n  },\n  \"pass\": \"boolean\",\n  \"reason\": \"string\",\n  \"fix\": \"string\"\n}"
+      },
+      "output": {
+        "scores": {
+          "logical": 5,
+          "solvable": 5,
+          "difficulty": 4,
+          "on_theme": 5
+        },
+        "pass": true,
+        "reason": "The puzzle is logical, fully supported by the visible clues in the maintenance log and control console, and fits the medium difficulty requirement.",
+        "fix": ""
+      }
+    }
+  ]
+}
