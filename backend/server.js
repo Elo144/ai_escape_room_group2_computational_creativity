@@ -57,8 +57,30 @@ async function callModel(model, { system, user }) {
   return data.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
 }
 
+// Backup provider when every Gemini model is busy: pollinations.ai (free, no key; suggested in the module brief).
+// Set BACKUP_PROVIDER=none in .env to turn it off.
+const BACKUP = (process.env.BACKUP_PROVIDER || "pollinations").toLowerCase();
+async function callPollinations({ system, user }) {
+  const t0 = Date.now();
+  const res = await fetch("https://text.pollinations.ai/openai", {
+    method: "POST",
+    signal: AbortSignal.timeout(120000),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: process.env.POLLINATIONS_MODEL || "openai",
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      response_format: { type: "json_object" },
+    }),
+  });
+  const text = await res.text();
+  console.log(`  pollinations: ${res.status} after ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  if (!res.ok) throw new Error(`pollinations error ${res.status}: ${text.slice(0, 120)}`);
+  try { return JSON.parse(text).choices?.[0]?.message?.content ?? text; } catch { return text; }
+}
+
 async function askJSON(prompt, label) {
-  const models = [MODEL, MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)];
+  // main model three times (with growing waits, for "high demand" spikes), then the backup Gemini models
+  const models = [MODEL, MODEL, MODEL, ...FALLBACK_MODELS.filter(m => m !== MODEL)];
   let lastErr;
   for (let i = 0; i < models.length; i++) {
     try {
@@ -67,7 +89,16 @@ async function askJSON(prompt, label) {
     } catch (err) {
       lastErr = err;
       console.warn(`  ${label}: ${models[i]} failed – ${err.message.slice(0, 120)}`);
-      if (i < models.length - 1) await sleep(2000);
+      if (i < models.length - 1) await sleep(i < 2 ? 3000 * (i + 1) : 1500);
+    }
+  }
+  if (BACKUP === "pollinations") {
+    try {
+      console.warn(`  ${label}: all Gemini models busy – trying the backup (pollinations.ai)`);
+      const text = await callPollinations(prompt);
+      return { json: parseModelJSON(text), raw: text, model: "pollinations" };
+    } catch (err) {
+      console.warn(`  ${label}: backup failed – ${err.message.slice(0, 120)}`);
     }
   }
   throw lastErr;
