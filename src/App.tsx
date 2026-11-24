@@ -344,6 +344,13 @@ function Landing({
             <button className="primary-button" onClick={() => onBegin(difficulty, time, chaos, mood)}>
               Enter the facility <Icon name="arrow" />
             </button>
+            {/* KAN-85 / KAN-82: AI-generated 3D room (public/room.html, needs the AI server running) */}
+            <a
+              className="nav-button"
+              href={`/room.html?stage=2&difficulty=${encodeURIComponent(difficulty)}&time=${encodeURIComponent(time)}&chaos=${encodeURIComponent(chaos)}`}
+            >
+              Play in 3D (AI) <Icon name="arrow" />
+            </a>
           </div>
         </div>
       </section>

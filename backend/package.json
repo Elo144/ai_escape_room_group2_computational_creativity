@@ -1,0 +1,15 @@
+{
+  "name": "escape-room-ai-server",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "AI server for the escape room: Gemini + the shared prompt library (prompt.js)",
+  "scripts": {
+    "start": "node server.js",
+    "prompts": "node printPrompts.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  }
+}
