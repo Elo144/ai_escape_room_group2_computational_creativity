@@ -122,15 +122,25 @@ function normaliseSetting(value, fallback) {
  * Convert configuration-screen values into a consistent mood block.
  * The config screen uses capitalised labels and string time limits.
  */
+const MOOD = {
+  tense: "Keep the tone tense and urgent. Short, sharp sentences. Danger feels close.",
+  eerie: "Keep the tone eerie and quiet. Use unsettling details, strange silences and things that feel slightly wrong.",
+  hopeful: "Keep the tone hopeful. The danger is real, but the Game Master is encouraging and small signs of survival and progress stand out.",
+  "dark humour": "Keep the tone darkly funny, with dry deadpan jokes about the apocalypse. Never joke about gore or real suffering.",
+};
+
+/**
+ * Convert configuration-screen values into a consistent mood block.
+ * The config screen uses capitalised labels and string time limits.
+ */
 function moodBlock(settings = {}) {
   const difficultyKey = normaliseSetting(settings.difficulty, "medium");
   const chaosKey = normaliseSetting(settings.chaos, "medium");
+  const moodKey = normaliseSetting(settings.mood, "tense");
 
-  const difficultyText =
-    DIFFICULTY[difficultyKey] ?? DIFFICULTY.medium;
-
-  const chaosText =
-    CHAOS[chaosKey] ?? CHAOS.medium;
+  const difficultyText = DIFFICULTY[difficultyKey] ?? DIFFICULTY.medium;
+  const chaosText = CHAOS[chaosKey] ?? CHAOS.medium;
+  const moodText = MOOD[moodKey] ?? MOOD.tense;
 
   const rawTimeLimit = String(settings.timeLimit ?? "25").trim();
 
@@ -140,6 +150,7 @@ function moodBlock(settings = {}) {
       : `Time: ${rawTimeLimit} minutes for the whole zone, puzzles must be solvable well within this.`;
 
   return [
+    `Mood (${moodKey}): ${moodText} This adjusts the general TONE where they differ, but content must stay suitable for ages 12+.`,
     `Difficulty (${difficultyKey}): ${difficultyText}`,
     `Chaos (${chaosKey}): ${chaosText}`,
     timeLine,
@@ -571,6 +582,7 @@ export {
   TONE,
   DIFFICULTY,
   CHAOS,
+  MOOD,
   OUTPUT_RULES,
   PUZZLE_TYPES,
   PASS_MARK,
