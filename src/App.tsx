@@ -347,7 +347,7 @@ function Landing({
             {/* KAN-85 / KAN-82: AI-generated 3D room (public/room.html, needs the AI server running) */}
             <a
               className="nav-button"
-              href={`/room.html?stage=2&difficulty=${encodeURIComponent(difficulty)}&time=${encodeURIComponent(time)}&chaos=${encodeURIComponent(chaos)}`}
+              href={`/room.html?stage=2&difficulty=${encodeURIComponent(difficulty)}&time=${encodeURIComponent(time)}&chaos=${encodeURIComponent(chaos)}&mood=${encodeURIComponent(mood)}`}
             >
               Play in 3D (AI) <Icon name="arrow" />
             </a>
