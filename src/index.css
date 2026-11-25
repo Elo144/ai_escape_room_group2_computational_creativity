@@ -2240,4 +2240,9 @@ footer {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  /* Mood: changes the look of the game scene */
+.game-page[data-mood="Tense"] .game-scene { filter: saturate(0.8) contrast(1.1); }
+.game-page[data-mood="Eerie"] .game-scene { filter: hue-rotate(40deg) saturate(0.7) brightness(0.85); }
+.game-page[data-mood="Hopeful"] .game-scene { filter: saturate(1.2) brightness(1.15); }
+.game-page[data-mood="Dark humour"] .game-scene { filter: sepia(0.5) contrast(1.1); }
 }

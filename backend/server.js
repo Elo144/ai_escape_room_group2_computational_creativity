@@ -123,6 +123,7 @@ app.post("/api/room", async (req, res) => {
     difficulty: req.body.difficulty || "Medium",
     chaos: req.body.chaos || "Medium",
     timeLimit: req.body.timeLimit || "25",
+    mood: req.body.mood || "Tense",
   };
   const facts = req.body.facts || [];
   const log = { settings, stage: STAGES[stage], steps: [] };

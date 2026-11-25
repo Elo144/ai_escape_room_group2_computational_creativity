@@ -100,7 +100,7 @@
       <label><span class="label">Stage</span><select id="stage"><option value="1">Brazil</option><option value="2" selected>New York</option><option value="3">Europe</option><option value="4">Antarctica</option></select></label>
       <label><span class="label">Difficulty</span><select id="difficulty"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></label>
       <label><span class="label">Chaos level</span><select id="chaosLevel"><option>Low</option><option selected>Medium</option><option>High</option></select></label>
-      <label><span class="label">Time limit</span><select id="timeLimit"><option value="20">20 min</option><option value="25" selected>25 min</option><option value="30">30 min</option><option value="40">40 min</option><option value="Unlimited">No limit</option></select></label>
+      <label><span class="label">Time limit</span><select id="timeLimit"><option value="20">20 min</option><option value="25" selected>25 min</option><option value="30">30 min</option><option value="40">40 min</option><option value="Unlimited">No limit</option></select></label>      <label><span class="label">Mood</span><select id="mood"><option>Tense</option><option>Eerie</option><option>Hopeful</option><option>Dark humour</option></select></label>
     </div>
     <button class="btn primary" id="generateBtn">Generate room</button>
     <p id="status" class="muted" aria-live="polite"></p>
@@ -287,6 +287,12 @@ function applyLook(look) {
   pMat.blending = look.particles === 'embers' ? THREE.AdditiveBlending : THREE.NormalBlending;
   smoke.forEach(s => s.visible = look.particles === 'embers');
 }
+const MOODS = { Tense: { exp: 1.05, fog: 1 }, Eerie: { exp: 0.85, fog: 1.5 }, Hopeful: { exp: 1.25, fog: 0.7 }, 'Dark humour': { exp: 1.05, fog: 1 } };
+function applyMood(mood) {
+  const k = MOODS[mood] || MOODS.Tense;
+  renderer.toneMappingExposure = k.exp;
+  scene.fog.density *= k.fog;
+}
 
 /* ---------- Layer 4: film look ---------- */
 const composer = new EffectComposer(renderer);
@@ -328,10 +334,11 @@ async function generate(settings) {
   $('generateBtn').disabled = true; $('status').className = 'muted';
   $('status').textContent = 'The AI is designing the room, writing a puzzle and testing it with the evaluator… (up to a minute)';
   applyLook(LOOKS[settings.stage]);
+  applyMood(settings.mood);
   try { startGame(await api('room', settings), settings); }
   catch (err) { $('status').className = 'err'; $('status').textContent = 'Could not generate the room: ' + err.message; $('generateBtn').disabled = false; $('settingsGrid').classList.remove('hidden'); }
 }
-$('generateBtn').addEventListener('click', () => generate({ stage: +$('stage').value, difficulty: $('difficulty').value, chaos: $('chaosLevel').value, timeLimit: $('timeLimit').value }));
+$('generateBtn').addEventListener('click', () => generate({ stage: +$('stage').value, difficulty: $('difficulty').value, chaos: $('chaosLevel').value, timeLimit: $('timeLimit').value, mood: $('mood').value }));
 
 function startGame(data, settings) {
   game = data; playing = true; startTime = Date.now();
@@ -428,7 +435,7 @@ const startStage = LOOKS[+params.get('stage')] ? +params.get('stage') : 2;
 $('stage').value = String(startStage); applyLook(LOOKS[startStage]);
 if (params.has('difficulty')) {
   $('settingsGrid').classList.add('hidden'); $('startSub').textContent = `${LOOKS[startStage].name} · entering the facility`;
-  generate({ stage: startStage, difficulty: params.get('difficulty'), chaos: params.get('chaos') || 'Medium', timeLimit: params.get('time') || '25' });
+  generate({ stage: startStage, difficulty: params.get('difficulty'), chaos: params.get('chaos') || 'Medium', timeLimit: params.get('time') || '25', mood: params.get('mood') || 'Tense' });
 }
 
 /* ---------- Render loop ---------- */
