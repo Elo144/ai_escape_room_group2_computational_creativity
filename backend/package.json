@@ -6,7 +6,8 @@
   "description": "AI server for the escape room: Gemini + the shared prompt library (prompt.js)",
   "scripts": {
     "start": "node server.js",
-    "prompts": "node printPrompts.js"
+    "prompts": "node printPrompts.js",
+    "evaluate-images": "node evaluateImages.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

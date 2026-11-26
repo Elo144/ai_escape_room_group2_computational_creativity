@@ -372,7 +372,8 @@ function inspect(g) {
   $('pzClues').textContent = p.clue_locations?.length ? 'Look at: ' + p.clue_locations.join(' · ') : '';
   $('pzAnswer').placeholder = p.answer_format || 'Type your answer'; $('pzAnswer').value = ''; $('feedback').textContent = '';
   const e = game.evaluation;
-  $('pzEval').innerHTML = e ? `AI evaluator: <b>${e.pass ? 'PASSED' : 'BEST ATTEMPT'}</b> · logical ${e.scores?.logical} · solvable ${e.scores?.solvable} · difficulty ${e.scores?.difficulty} · on theme ${e.scores?.on_theme}` : '';
+  $('pzEval').innerHTML = e ? `AI evaluator: <b>${e.pass ? 'PASSED' : 'BEST ATTEMPT'}</b> · logical ${e.scores?.logical} · solvable ${e.scores?.solvable} · difficulty ${e.scores?.difficulty} · on theme ${e.scores?.on_theme}`
+    + (e.visual ? `<br>Visual check: <b>${e.visual.pass ? 'ALL CLUES VISIBLE' : 'CLUE NOT IN ROOM'}</b> · ${e.visual.checked} clue(s) checked against the objects in this room` : '') : '';
   $('puzzleOverlay').classList.remove('hidden'); $('pzAnswer').focus();
 }
 async function check() {

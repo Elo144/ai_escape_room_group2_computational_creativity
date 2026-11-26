@@ -12,6 +12,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
+import { checkCluesVisible } from "./visualChecks.js"; // KAN-120 visual check
 import {
   STAGES,
   PUZZLE_TYPES,
@@ -150,8 +151,14 @@ app.post("/api/room", async (req, res) => {
       log.steps.push({ step: `puzzle attempt ${attempt}`, model: pRes.model, prompt: puzzlePrompt, output: puzzle },
                      { step: `evaluator attempt ${attempt}`, model: eRes.model, prompt: evalPrompt, output: evaluation });
       console.log(`  puzzle ${attempt} (${type}): evaluator ${evaluation.pass ? "PASS" : "FAIL"} ${JSON.stringify(evaluation.scores)}`);
-      if (evaluation.pass) break;
+      // KAN-120: are all the clues on objects the player can actually see in the 3D room?
+      const visual = checkCluesVisible(room, puzzle);
+      evaluation.visual = visual;
+      log.steps.push({ step: `visual check attempt ${attempt}`, output: visual });
+      console.log(`  visual check: ${visual.pass ? "PASS" : "FAIL"} – ${visual.reason}`);
+      if (evaluation.pass && visual.pass) break;
       feedback = [`Evaluator feedback on the previous puzzle (fix this): ${evaluation.fix || evaluation.reason}`];
+      if (!visual.pass) feedback.push(`Visual check failed (fix this): ${visual.reason} ${visual.fix}`);
     }
 
     const id = crypto.randomUUID();
